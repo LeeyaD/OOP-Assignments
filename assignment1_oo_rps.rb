@@ -7,6 +7,10 @@ class Player
     set_name
   end
 
+  def human?
+    @player_type == :human
+  end
+
   def set_name
     if human?
       n = ""
@@ -20,10 +24,6 @@ class Player
     else
       self.name = ["Jarvus", "R2D2", "Chappie"].sample
     end
-  end
-
-  def human?
-    @player_type == :human
   end
 
   def choose
@@ -40,27 +40,6 @@ class Player
       self.move = ['rock', 'paper', 'scissors'].sample
     end
   end
-
-  def human?
-    @player_type == :human
-  end
-end
-
-class Move
-  def initialize
-    
-  end
-end
-
-class Rule
-  def initialize
-    
-  end
-end
-
-#not sure where "compare" goes yet
-def compare(move1, move2)
-
 end
 
 class RPSGame
@@ -128,3 +107,21 @@ class RPSGame
 end
 
 RPSGame.new.play
+
+
+class Move
+  def initialize
+    
+  end
+end
+
+class Rule
+  def initialize
+    
+  end
+end
+
+#not sure where "compare" goes yet
+def compare(move1, move2)
+
+end
