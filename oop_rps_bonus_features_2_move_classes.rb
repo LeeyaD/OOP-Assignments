@@ -1,10 +1,4 @@
-module Presentable
-  def to_s
-    @value
-  end
-end
-
-module Movable
+class Move
   def rock?
     @value == 'rock'
   end
@@ -24,12 +18,13 @@ module Movable
   def spock?
     @value == 'spock'
   end
+
+  def to_s
+    @value
+  end
 end
 
-class Rock
-  include Presentable
-  include Movable
-
+class Rock < Move
   def initialize
     @value = "rock"
   end
@@ -53,10 +48,7 @@ class Rock
   end
 end
 
-class Paper
-  include Presentable
-  include Movable
-
+class Paper < Move
   def initialize
     @value = "paper"
   end
@@ -80,10 +72,7 @@ class Paper
   end
 end
 
-class Scissors
-  include Presentable
-  include Movable
-
+class Scissors < Move
   def initialize
     @value = "scissors"
   end
@@ -107,10 +96,7 @@ class Scissors
   end
 end
 
-class Lizard
-  include Presentable
-  include Movable
-
+class Lizard < Move
   def initialize
     @value = "lizard"
   end
@@ -134,10 +120,7 @@ class Lizard
   end
 end
 
-class Spock
-  include Presentable
-  include Movable
-
+class Spock < Move
   def initialize
     @value = "spock"
   end
