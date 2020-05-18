@@ -194,6 +194,7 @@ class RPSGame
             "spock" => Spock.new }
 
   def initialize
+    system 'clear'
     @human = Human.new
     @computer = Computer.new
   end
@@ -236,6 +237,7 @@ class RPSGame
   end
 
   def play
+    system 'clear'
     display_welcome_message
 
     loop do
