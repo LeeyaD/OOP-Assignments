@@ -188,20 +188,58 @@ class Computer < Player
   end
 end
 
+class Score
+  attr_accessor :human_score, :computer_score
+  WINNING_POINTS = 2
+
+  def initialize
+    binding.pry
+    @human_score = 0
+    @computer_score = 0
+  end
+
+  def update_score(winner)
+    binding.pry
+    if winner
+      if winner == "human"
+        human_score += 1
+      else
+        computer_score += 1
+      end
+    end
+  end
+
+  def winner?
+    human_score == WINNING_POINTS ||
+    computer_score == WINNING_POINTS
+  end
+
+  def find_winner 
+    if human_score > computer_score
+      return "human"
+    else
+      return "computer"
+    end
+  end
+
+  def reset_score
+    human_score = 0
+    computer_score = 0
+  end
+end
+
+
 class RPSGame
-  attr_accessor :human, :computer, :scoreboard
+  attr_accessor :human, :computer, :score
 
   MOVES = { "rock" => Rock.new, "paper" => Paper.new,
             "scissors" => Scissors.new, "lizard" => Lizard.new,
             "spock" => Spock.new }
 
-  WINNING_POINTS = 2
-
   def initialize
-    system 'clear'
     @human = Human.new
     @computer = Computer.new
-    @scoreboard = { human.name => 0, computer.name => 0 }
+    @score = Score.new
   end
 
   def display_welcome_message
@@ -222,35 +260,20 @@ class RPSGame
   end
 
   def display_round_winner
+    winner = 0
     puts ""
     sleep 2
     if human.move > computer.move
-      update_score(human)
+      winner = "human"
       puts "#{human.name} won this round!"
     elsif human.move < computer.move
-      update_score(computer)
+      winner = "computer"
       puts "#{computer.name} won this round!"
     else
       puts "It's a tie!"
     end
-  end
 
-  def grand_winner?
-    scoreboard.values.include? WINNING_POINTS
-  end
-
-  def display_grand_winner
-    winner = nil
-
-    scoreboard.each do |player, score|
-      if score == WINNING_POINTS
-        winner = player
-      end
-    end
-
-    sleep 1
-    puts "#{winner} has won the game!"
-    reset_score
+    score.update_score(winner)    
   end
 
   def display_score
@@ -259,17 +282,21 @@ class RPSGame
     puts "The score is..."
     puts ""
     sleep 1
-    puts "#{human.name}: #{@scoreboard[human.name]}"
-    puts "#{computer.name}: #{@scoreboard[computer.name]}"
+    puts "#{human.name}: #{score.human_score}"
+    puts "#{computer.name}: #{score.computer_score}"
     puts ""
   end
 
-  def update_score(winner)
-    @scoreboard[winner.name] += 1
+  def grand_winner?
+    score.winner?
   end
 
-  def reset_score
-    @scoreboard = { human.name => 0, computer.name => 0 }
+  def display_grand_winner
+    winner = score.find_winner 
+  
+    sleep 1
+    puts "#{winner} has won the game!"
+    score.reset_score
   end
 
   def play_again?
@@ -289,7 +316,6 @@ class RPSGame
   end
 
   def play
-    system 'clear'
     display_welcome_message
 
     loop do
