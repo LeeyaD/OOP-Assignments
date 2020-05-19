@@ -1,3 +1,5 @@
+require 'pry-byebug'
+
 class Move
   def rock?
     @value == 'rock'
@@ -187,19 +189,24 @@ class Computer < Player
 end
 
 class RPSGame
-  attr_accessor :human, :computer
+  attr_accessor :human, :computer, :scoreboard
 
   MOVES = { "rock" => Rock.new, "paper" => Paper.new,
             "scissors" => Scissors.new, "lizard" => Lizard.new,
             "spock" => Spock.new }
 
+  WINNING_POINTS = 2
+
   def initialize
     system 'clear'
     @human = Human.new
     @computer = Computer.new
+    @scoreboard = { human.name => 0, computer.name => 0 }
   end
 
   def display_welcome_message
+    puts "Hi #{human.name}!"
+    puts ""
     puts "Welcome to Rock, Paper, Scissors, Lizard, Spock!"
   end
 
@@ -208,24 +215,69 @@ class RPSGame
   end
 
   def display_moves
+    puts ""
     puts "#{human.name} chose: #{human.move}"
+    sleep 1
     puts "#{computer.name} chose: #{computer.move}"
   end
 
-  def display_winner
+  def display_round_winner
+    puts ""
+    sleep 2
     if human.move > computer.move
-      puts "#{human.name} won!"
+      update_score(human)
+      puts "#{human.name} won this round!"
     elsif human.move < computer.move
-      puts "#{computer.name} won!"
+      update_score(computer)
+      puts "#{computer.name} won this round!"
     else
-      puts "Its a tie!"
+      puts "It's a tie!"
     end
+  end
+
+  def grand_winner?
+    scoreboard.values.include? WINNING_POINTS
+  end
+
+  def display_grand_winner
+    winner = nil
+
+    scoreboard.each do |player, score|
+      if score == WINNING_POINTS
+        winner = player
+      end
+    end
+
+    sleep 1
+    puts "#{winner} has won the game!"
+    reset_score
+  end
+
+  def display_score
+    sleep 1
+    puts ""
+    puts "The score is..."
+    puts ""
+    sleep 1
+    puts "#{human.name}: #{@scoreboard[human.name]}"
+    puts "#{computer.name}: #{@scoreboard[computer.name]}"
+    puts ""
+  end
+
+  def update_score(winner)
+    @scoreboard[winner.name] += 1
+  end
+
+  def reset_score
+    @scoreboard = { human.name => 0, computer.name => 0 }
   end
 
   def play_again?
     answer = nil
 
     loop do
+      puts ""
+      sleep 1
       puts "Would you like to play again? y or n"
       answer = gets.chomp
       break if ['y', 'n'].include? answer.downcase
@@ -244,8 +296,11 @@ class RPSGame
       human.choose
       computer.choose
       display_moves
-      display_winner
+      display_round_winner
+      display_score
+      display_grand_winner if grand_winner?
       break unless play_again?
+      system 'clear'
     end
 
     display_goodbye_message
