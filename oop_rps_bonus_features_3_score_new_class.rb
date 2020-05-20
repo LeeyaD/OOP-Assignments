@@ -147,10 +147,11 @@ class Spock < Move
 end
 
 class Player
-  attr_accessor :move, :name
+  attr_accessor :move, :name, :score
 
   def initialize
     set_name
+    @score = Score.new
   end
 end
 
@@ -189,57 +190,40 @@ class Computer < Player
 end
 
 class Score
-  attr_accessor :human_score, :computer_score
-  WINNING_POINTS = 2
+  attr_accessor :score
 
   def initialize
-    binding.pry
-    @human_score = 0
-    @computer_score = 0
+    @score = 0
   end
 
-  def update_score(winner)
-    binding.pry
-    if winner
-      if winner == "human"
-        human_score += 1
-      else
-        computer_score += 1
-      end
-    end
+  def update
+    self.score += 1
   end
 
-  def winner?
-    human_score == WINNING_POINTS ||
-    computer_score == WINNING_POINTS
+  def reset
+    self.score = 0
   end
 
-  def find_winner 
-    if human_score > computer_score
-      return "human"
-    else
-      return "computer"
-    end
-  end
-
-  def reset_score
-    human_score = 0
-    computer_score = 0
+  def self.to_s
+    @score
   end
 end
 
 
 class RPSGame
-  attr_accessor :human, :computer, :score
+  attr_accessor :human, :computer, :scoreboard
 
   MOVES = { "rock" => Rock.new, "paper" => Paper.new,
             "scissors" => Scissors.new, "lizard" => Lizard.new,
             "spock" => Spock.new }
+  
+  WINNING_POINTS = 2
 
   def initialize
     @human = Human.new
     @computer = Computer.new
-    @score = Score.new
+    @scoreboard = { human.name => human.score, 
+                    computer.name => computer.score }
   end
 
   def display_welcome_message
@@ -260,20 +244,17 @@ class RPSGame
   end
 
   def display_round_winner
-    winner = 0
     puts ""
     sleep 2
     if human.move > computer.move
-      winner = "human"
+      human.score.update
       puts "#{human.name} won this round!"
     elsif human.move < computer.move
-      winner = "computer"
+      computer.score.update
       puts "#{computer.name} won this round!"
     else
       puts "It's a tie!"
-    end
-
-    score.update_score(winner)    
+    end   
   end
 
   def display_score
@@ -282,21 +263,27 @@ class RPSGame
     puts "The score is..."
     puts ""
     sleep 1
-    puts "#{human.name}: #{score.human_score}"
-    puts "#{computer.name}: #{score.computer_score}"
+    puts "#{human.name}: #{human.score.to_s}"
+    puts "#{computer.name}: #{computer.score}"
     puts ""
   end
 
   def grand_winner?
-    score.winner?
+    scoreboard.values.any? do |score|
+      score == WINNING_POINTS
+    end
+  end
+
+  def find_grand_winner
+    scoreboard.key(WINNING_POINTS)
   end
 
   def display_grand_winner
-    winner = score.find_winner 
-  
     sleep 1
-    puts "#{winner} has won the game!"
-    score.reset_score
+    if grand_winner?
+      puts "#{find_grand_winner} has won the game!"
+    end
+    Player.score.reset
   end
 
   def play_again?
