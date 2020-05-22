@@ -1,6 +1,14 @@
-require 'pry-byebug'
+def clear_screen
+  system 'clear'
+end
+
+def empty_line
+  puts ""
+end
 
 class Move
+  attr_accessor :value
+
   def rock?
     @value == 'rock'
   end
@@ -147,22 +155,44 @@ class Spock < Move
 end
 
 class Player
-  attr_accessor :move, :name, :score
+  attr_accessor :move, :name, :score, :move_history
 
   def initialize
-    set_name
     @score = Score.new
+    @move_history = []
+  end
+
+  def add_to_move_history
+    move_history << move
+  end
+
+  def show_move_history
+    sleep 1
+    puts "Here is a list of moves #{name} has made so far:"
+    empty_line
+    sleep 2
+
+    move_history.each_with_index do |move, idx|
+      puts "#{idx + 1}. #{move.value}"
+    end
   end
 end
 
 class Human < Player
+  def initialize
+    super
+    set_name
+  end
+
   def set_name
+    clear_screen
     n = ""
     loop do
       puts "What's your name?"
       n = gets.chomp.capitalize
-      break unless n.empty?
-      puts "Sorry, must enter a value."
+      break unless n.match?(/[^A-z]/) || n.empty?
+      puts "Sorry, must enter a value that contains only letters."
+      empty_line
     end
     self.name = n
   end
@@ -176,16 +206,69 @@ class Human < Player
       puts "Sorry, invalid choice."
     end
     self.move = RPSGame::MOVES[choice]
+    add_to_move_history
   end
 end
 
 class Computer < Player
-  def set_name
-    self.name = ["Jarvus", "R2D2", "Chappie"].sample
+  attr_accessor :personality
+end
+
+class R2D2 < Computer
+  def initialize
+    super
+    @name = "R2D2"
+    @personality = { Rock.new => 1 }
   end
 
   def choose
-    self.move = RPSGame::MOVES.values.sample
+    moves = []
+
+    personality.map do |move, tendency|
+      tendency.times { moves << move }
+    end
+
+    self.move = moves.sample
+    add_to_move_history
+  end
+end
+
+class Siri < Computer
+  def initialize
+    super
+    @name = "Siri"
+    @personality = { Rock.new => 1, Paper.new => 0, Scissors.new => 3,
+                     Lizard.new => 2, Spock.new => 2 }
+  end
+
+  def choose
+    moves = []
+
+    personality.map do |move, tendency|
+      tendency.times { moves << move }
+    end
+
+    self.move = moves.sample
+    add_to_move_history
+  end
+end
+
+class Jarvus < Computer
+  def initialize
+    super
+    @name = "Jarvus"
+    @personality = { Lizard.new => 1, Spock.new => 1 }
+  end
+
+  def choose
+    moves = []
+
+    personality.map do |move, tendency|
+      tendency.times { moves << move }
+    end
+
+    self.move = moves.sample
+    add_to_move_history
   end
 end
 
@@ -203,10 +286,6 @@ class Score
   def reset
     self.points = 0
   end
-
-  def to_s
-    "#{points}"
-  end
 end
 
 class RPSGame
@@ -215,28 +294,31 @@ class RPSGame
   MOVES = { "rock" => Rock.new, "paper" => Paper.new,
             "scissors" => Scissors.new, "lizard" => Lizard.new,
             "spock" => Spock.new }
-
-  WINNING_POINTS = 2
+  COMPUTERS = [R2D2.new, Siri.new, Jarvus.new]
+  WINNING_POINTS = 3
 
   def initialize
     @human = Human.new
-    @computer = Computer.new
+    @computer = COMPUTERS.sample
     @scoreboard = { human.name => human.score,
                     computer.name => computer.score }
   end
 
   def display_welcome_message
+    clear_screen
     puts "Hi #{human.name}!"
-    puts ""
+    empty_line
     puts "Welcome to Rock, Paper, Scissors, Lizard, Spock!"
+    empty_line
   end
 
   def display_goodbye_message
+    empty_line
     puts "Thanks for playing Rock, Paper, Scissors, Lizard, Spock. Goodbye!"
   end
 
   def display_moves
-    puts ""
+    empty_line
     puts "#{human.name} chose: #{human.move}"
     sleep 1
     puts "#{computer.name} chose: #{computer.move}"
@@ -250,65 +332,84 @@ class RPSGame
     human.move < computer.move
   end
 
+  def player_won?
+    human_won? || computer_won?
+  end
+
   def tie?
     !human_won? && !computer_won?
   end
 
   def display_round_winner
-    puts ""
+    empty_line
     sleep 2
-    if human_won?
-      winner = human
-    elsif computer_won?
-      winner = computer
+    if player_won?
+      human_won? ? (winner = human) : (winner = computer)
+      puts "#{winner.name} won this round!"
+      winner.score.update
     elsif tie?
       puts "It's a tie!"
     end
-
-    puts "#{winner.name} won this round!" if winner
-    winner.score.update if winner
   end
 
   def display_score
     sleep 1
-    puts ""
+    empty_line
     puts "The score is..."
-    puts ""
-    sleep 1
-    puts "#{human.name}: #{human.score}"
-    puts "#{computer.name}: #{computer.score}"
-    puts ""
+    empty_line
+    sleep 2
+    puts "#{human.name}: #{human.score.points}"
+    puts "#{computer.name}: #{computer.score.points}"
+    empty_line
   end
 
   def grand_winner?
-    scoreboard.values.any? do |score|
-      score.points == WINNING_POINTS
-    end
+    human.score.points == WINNING_POINTS ||
+      computer.score.points == WINNING_POINTS
   end
 
   def find_grand_winner
-    winner = scoreboard.select do |_, score|
-      score.points == WINNING_POINTS
-    end
+    return human.name if human.score.points == WINNING_POINTS
+    return computer.name if computer.score.points == WINNING_POINTS
+  end
 
-    winner.keys[0]
+  def reset_players_scores
+    human.score.reset if grand_winner?
+    computer.score.reset if grand_winner?
   end
 
   def display_grand_winner
     sleep 1
-    if grand_winner?
-      puts "#{find_grand_winner} has won the game!"
+    puts "#{find_grand_winner} has won the game!" if grand_winner?
+    empty_line
+  end
+
+  def display_move_history
+    empty_line
+    human.show_move_history
+    empty_line
+    computer.show_move_history
+  end
+
+  def show_move_history?
+    answer = nil
+
+    loop do
+      puts "Would you like to see a history of the moves made so far? y or n"
+      answer = gets.chomp
+      break if ["y", "n"].include? answer.downcase
+      puts "Sorry, must be y or n ."
     end
 
-    human.score.reset
-    computer.score.reset
+    return false if answer.downcase == 'n'
+    return true if answer.downcase == 'y'
   end
 
   def play_again?
     answer = nil
 
     loop do
-      puts ""
+      empty_line
       puts "Would you like to play again? y or n"
       answer = gets.chomp
       break if ['y', 'n'].include? answer.downcase
@@ -320,8 +421,16 @@ class RPSGame
   end
 
   def players_choose_moves
+    sleep 1
     human.choose
     computer.choose
+  end
+
+  def display_results
+    display_moves
+    display_round_winner
+    display_score
+    display_grand_winner
   end
 
   def play
@@ -329,12 +438,11 @@ class RPSGame
 
     loop do
       players_choose_moves
-      display_moves
-      display_round_winner
-      display_score
-      display_grand_winner if grand_winner?
+      display_results
+      display_move_history if show_move_history?
+      reset_players_scores
       break unless play_again?
-      system 'clear'
+      clear_screen
     end
 
     display_goodbye_message
@@ -342,4 +450,3 @@ class RPSGame
 end
 
 RPSGame.new.play
-#bonus feature keeping pionts should be TEN POINTS!
